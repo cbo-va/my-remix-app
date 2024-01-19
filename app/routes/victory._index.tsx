@@ -1,6 +1,12 @@
+import React from "react";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import { VictoryAxis, VictoryLine, VictoryChart } from "victory";
+import {
+  VictoryBrushContainer,
+  VictoryZoomContainer,
+  VictoryLine,
+  VictoryChart,
+} from "victory";
 
 const colors = [
   "#5d8aa8",
@@ -53,8 +59,8 @@ export const loader = async () => {
     "cccccc",
     "dddddddd",
     "ccccccccc",
-    "eeeeee",
-    "ffffff",
+    //"eeeeee",
+    //"ffffff",
   ];
   const sevenDaysBackInTime = addMinutes(new Date(), -1 * 60 * 24 * 7);
   const data = names.map((name) => createTimeSeries(name, sevenDaysBackInTime));
@@ -63,19 +69,56 @@ export const loader = async () => {
 };
 
 export default function Posts() {
+  const [zoomDomain, setZoomDomain] = React.useState();
+  const [selectedDomain, setSelectedDomain] = React.useState();
+
+  const handleZoom = React.useCallback(
+    (domain) => {
+      setSelectedDomain(domain);
+      setZoomDomain(domain);
+    },
+    [setSelectedDomain]
+  );
+
+  const handleBrush = React.useCallback(
+    (domain) => {
+      setZoomDomain(domain);
+      setSelectedDomain(domain);
+    },
+    [setZoomDomain]
+  );
+
   const response = useLoaderData<typeof loader>();
-  const data = response.map((v) => {
-    const name = v.name;
-    const ts = v.ts.map(([timestamp, value]) => {
-      return [new Date(timestamp), value];
-    });
-    return { name, ts };
-  });
+
+  const data = React.useMemo(
+    () =>
+      response.map((v) => {
+        const name = v.name;
+        const ts = v.ts.map(([timestamp, value]) => {
+          return [new Date(timestamp), value];
+        });
+        return { name, ts };
+      }),
+    [response]
+  );
+
   return (
     <main>
       <div style={{ width: "90%", height: 800 }}>
-        <VictoryChart scale={{ x: "time" }}>
-          {data.map((figure, i) => (
+        <VictoryChart
+          width={900}
+          scale={{ x: "time" }}
+          containerComponent={
+            <VictoryZoomContainer
+              width={900}
+              responsive={false}
+              zoomDimension="x"
+              zoomDomain={zoomDomain}
+              onZoomDomainChange={handleZoom}
+            />
+          }
+        >
+          {data.slice(0, 2).map((figure, i) => (
             <VictoryLine
               key={i}
               style={{
@@ -83,6 +126,105 @@ export default function Posts() {
                 parent: { border: "1px solid #ccc" },
               }}
               data={figure.ts}
+              // data accessor for x values
+              x="0"
+              // data accessor for y values
+              y="1"
+            />
+          ))}
+        </VictoryChart>
+
+        <VictoryChart
+          width={900}
+          scale={{ x: "time" }}
+          containerComponent={
+            <VictoryBrushContainer
+              responsive={false}
+              brushDimension="x"
+              brushDomain={selectedDomain}
+              onBrushDomainChange={handleBrush}
+            />
+          }
+        >
+          {data.slice(0, 2).map((figure, i) => (
+            <VictoryLine
+              key={i}
+              style={{
+                data: { stroke: colors[i], strokeWidth: 0.5 },
+                parent: { border: "1px solid #ccc" },
+              }}
+              data={figure.ts
+                .map(([ts, v], i) => {
+                  if (i % 20 === 0) {
+                    return [ts, v];
+                  }
+                  return null;
+                })
+                .filter(Boolean)}
+              // data accessor for x values
+              x="0"
+              // data accessor for y values
+              y="1"
+            />
+          ))}
+        </VictoryChart>
+
+        <VictoryChart
+          width={900}
+          scale={{ x: "time" }}
+          containerComponent={
+            <VictoryZoomContainer
+              width={900}
+              responsive={false}
+              zoomDimension="x"
+              zoomDomain={zoomDomain}
+              onZoomDomainChange={handleZoom}
+            />
+          }
+        >
+          {data.slice(2, 9).map((figure, i) => (
+            <VictoryLine
+              key={i}
+              style={{
+                data: { stroke: colors[i], strokeWidth: 0.5 },
+                parent: { border: "1px solid #ccc" },
+              }}
+              data={figure.ts}
+              // data accessor for x values
+              x="0"
+              // data accessor for y values
+              y="1"
+            />
+          ))}
+        </VictoryChart>
+
+        <VictoryChart
+          width={900}
+          scale={{ x: "time" }}
+          containerComponent={
+            <VictoryBrushContainer
+              responsive={false}
+              brushDimension="x"
+              brushDomain={selectedDomain}
+              onBrushDomainChange={handleBrush}
+            />
+          }
+        >
+          {data.slice(2, 9).map((figure, i) => (
+            <VictoryLine
+              key={i}
+              style={{
+                data: { stroke: colors[i], strokeWidth: 0.5 },
+                parent: { border: "1px solid #ccc" },
+              }}
+              data={figure.ts
+                .map(([ts, v], i) => {
+                  if (i % 20 === 0) {
+                    return [ts, v];
+                  }
+                  return null;
+                })
+                .filter(Boolean)}
               // data accessor for x values
               x="0"
               // data accessor for y values
