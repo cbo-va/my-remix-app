@@ -1,32 +1,29 @@
-import React from "react";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
+import React from "react";
 import {
+  createContainer,
   VictoryBrushContainer,
-  VictoryZoomContainer,
-  VictoryLine,
   VictoryChart,
+  VictoryLine,
+  VictoryTooltip,
+  VictoryAxis,
+  VictoryVoronoiContainer,
+  VictoryZoomContainer,
 } from "victory";
 
 const colors = [
   "#5d8aa8",
-  "#f0f8ff",
   "#e32636",
-  "#efdecd",
-  "#e52b50",
   "#ffbf00",
-  "#ff033e",
   "#9966cc",
   "#a4c639",
-  "#f2f3f4",
   "#cd9575",
   "#915c83",
-  "#faebd7",
   "#008000",
   "#8db600",
   "#fbceb1",
   "#00ffff",
-  "#7fffd4",
   "#4b5320",
   "#e9d66b",
   "#b2beb5",
@@ -40,7 +37,11 @@ const addMinutes = (date: Date, minutes: number) =>
 const createTimeSeries = (name: string, startDate: Date, to = new Date()) => {
   const offset = Math.random() * 100000000 + startDate.getTime();
   const ts: [Date, number][] = [];
-  for (let iter = startDate; iter < to; iter = addMinutes(iter, 5)) {
+  for (
+    let iter = startDate;
+    iter < to;
+    iter = addMinutes(iter, Math.floor(5 + Math.random() * 2))
+  ) {
     ts.push([
       iter,
       10 + Math.random() * 0.5 + Math.sin((offset + iter.getTime()) / 10000000),
@@ -67,6 +68,8 @@ export const loader = async () => {
   const x = data[0].ts.at(0);
   return json(data);
 };
+
+const VictoryZoomVoronoiContainer = createContainer("zoom", "voronoi");
 
 export default function Posts() {
   const [zoomDomain, setZoomDomain] = React.useState();
@@ -109,20 +112,22 @@ export default function Posts() {
           width={900}
           scale={{ x: "time" }}
           containerComponent={
-            <VictoryZoomContainer
-              width={900}
+            <VictoryZoomVoronoiContainer
               responsive={false}
               zoomDimension="x"
               zoomDomain={zoomDomain}
               onZoomDomainChange={handleZoom}
+              mouseFollowTooltips
+              voronoiDimension="x"
+              labels={({ datum }) => `y: ${datum[1]}`}
             />
           }
         >
-          {data.slice(0, 2).map((figure, i) => (
+          {data.slice(0, 8).map((figure, i) => (
             <VictoryLine
               key={i}
               style={{
-                data: { stroke: colors[i], strokeWidth: 0.5 },
+                data: { stroke: colors[i], strokeWidth: 1.5 },
                 parent: { border: "1px solid #ccc" },
               }}
               data={figure.ts}
@@ -136,6 +141,7 @@ export default function Posts() {
 
         <VictoryChart
           width={900}
+          height={160}
           scale={{ x: "time" }}
           containerComponent={
             <VictoryBrushContainer
@@ -146,11 +152,12 @@ export default function Posts() {
             />
           }
         >
-          {data.slice(0, 2).map((figure, i) => (
+          <VictoryAxis />
+          {data.slice(0, 9).map((figure, i) => (
             <VictoryLine
               key={i}
               style={{
-                data: { stroke: colors[i], strokeWidth: 0.5 },
+                data: { stroke: colors[i], strokeWidth: 0.9 },
                 parent: { border: "1px solid #ccc" },
               }}
               data={figure.ts
@@ -173,17 +180,20 @@ export default function Posts() {
           width={900}
           scale={{ x: "time" }}
           containerComponent={
-            <VictoryZoomContainer
-              width={900}
+            <VictoryZoomVoronoiContainer
               responsive={false}
               zoomDimension="x"
               zoomDomain={zoomDomain}
               onZoomDomainChange={handleZoom}
+              mouseFollowTooltips
+              voronoiDimension="x"
+              labels={({ datum }) => `y: ${datum[1]}`}
             />
           }
         >
           {data.slice(2, 9).map((figure, i) => (
             <VictoryLine
+              labelComponent={<VictoryTooltip />}
               key={i}
               style={{
                 data: { stroke: colors[i], strokeWidth: 0.5 },
@@ -200,9 +210,16 @@ export default function Posts() {
 
         <VictoryChart
           width={900}
+          height={160}
           scale={{ x: "time" }}
           containerComponent={
             <VictoryBrushContainer
+              handleWidth={12}
+              handleComponent={
+                <svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="10" height="10" fill="black" />
+                </svg>
+              }
               responsive={false}
               brushDimension="x"
               brushDomain={selectedDomain}
@@ -210,11 +227,12 @@ export default function Posts() {
             />
           }
         >
-          {data.slice(2, 9).map((figure, i) => (
+          <VictoryAxis />
+          {data.slice(0, 9).map((figure, i) => (
             <VictoryLine
               key={i}
               style={{
-                data: { stroke: colors[i], strokeWidth: 0.5 },
+                data: { stroke: "grey", strokeWidth: 0.5 },
                 parent: { border: "1px solid #ccc" },
               }}
               data={figure.ts
